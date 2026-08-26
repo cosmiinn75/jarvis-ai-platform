@@ -177,6 +177,18 @@ class WhisperTranscriptionServiceTest {
     }
 
     @Test
+    @DisplayName("transcribe() with language returns text on success")
+    void shouldReturnTranscribedTextWithLanguage() {
+        stubPostChain(Mono.just("Hello from Jarvis"));
+
+        StepVerifier.create(
+                        serviceWithKey.transcribe(new byte[]{1, 2, 3, 4}, "en")
+                )
+                .expectNext("Hello from Jarvis")
+                .verifyComplete();
+    }
+
+    @Test
     @DisplayName("transcribe() trims whitespace from response")
     void shouldTrimTranscribedText() {
         // Whisper API often returns trailing newlines
@@ -209,6 +221,21 @@ class WhisperTranscriptionServiceTest {
                                         "TRANSCRIPTION_FAILED"))
                 .verify();
     }
+
+    @Test
+    @DisplayName("transcribe() handles blank provider response gracefully")
+    void shouldFailForBlankProviderResponse() {
+
+        stubPostChain(Mono.just("    "));
+
+        StepVerifier.create(serviceWithKey.transcribe(new byte[]{1, 2, 3, 4}))
+                .expectErrorMatches(error ->
+                        error instanceof VoiceException ve &&
+                                ve.getErrorCode().equals("TRANSCRIPTION_FAILED"))
+                .verify();
+
+    }
+
 
     // ── isAvailable() tests ───────────────────────
 
