@@ -1,4 +1,5 @@
 package ai.jarvis.voice;
+
 import ai.jarvis.config.SecurityConfig;
 import ai.jarvis.config.TestSecurityConfig;
 import ai.jarvis.config.WithMockJarvisUser;
@@ -30,6 +31,15 @@ public class VoiceControllerTest {
 
     public static final String USER_ID_RAW = "3bb93254-6ce0-4cd3-91b3-a292a46e8fe9";
 
+
+    /**
+     * Tests authenticated Voice API requests with
+     * VoiceConversationService mocked.
+     * <p>
+     * Only methods directly invoked by the controller are stubbed.
+     * TextToSpeechService.speakAndPlay() is not stubbed because
+     * controller tests do not call the real VoiceConversationService.
+     */
     @Nested
     @WebFluxTest(controllers = {VoiceController.class})
     @Import(TestSecurityConfig.class)
@@ -45,6 +55,11 @@ public class VoiceControllerTest {
         @MockitoBean
         private JwtService jwtService;
 
+
+        /**
+         * Verifies that voice status reports ready
+         * when transcription and TTS services are available.
+         */
         @Test
         @DisplayName("Test GET /api/v1/voice/status - Should return voice ready when both services are available")
         void testVoiceStatus_ShouldReturnVoiceReady() {
@@ -65,6 +80,11 @@ public class VoiceControllerTest {
                     .jsonPath("$.data.voiceReady").isEqualTo(true);
         }
 
+
+        /**
+         * Verifies that voice status reports not ready
+         * when one of the voice services is unavailable.
+         */
         @Test
         @DisplayName("Test GET /api/v1/voice/status - Should return voice NOT ready when one service is down")
         void testVoiceStatus_ShouldReturnVoiceNotReady() {
@@ -87,6 +107,11 @@ public class VoiceControllerTest {
 
         }
 
+
+        /**
+         * Verifies that the speak endpoint returns 204
+         * when TTS completes successfully.
+         */
         @Test
         @DisplayName("Test POST /api/v1/voice/speak - Should return 204 when request is valid")
         void testVoiceSpeak_ShouldReturnNoContent() {
@@ -111,6 +136,11 @@ public class VoiceControllerTest {
 
         }
 
+
+        /**
+         * Verifies that the speak endpoint returns 503
+         * when the TTS service is unavailable.
+         */
         @Test
         @DisplayName("Test POST /api/v1/voice/speak - Should return 503 when TTS is unavailable")
         void testVoiceSpeak_ShouldReturnServiceUnavailable() {
@@ -133,6 +163,11 @@ public class VoiceControllerTest {
                     .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
         }
 
+
+        /**
+         * Verifies that the speak endpoint returns 400
+         * when the request contains blank text.
+         */
         @Test
         @DisplayName("Test POST /api/v1/voice/speak - Should return 400 when text is blank")
         void testVoiceSpeak_ShouldReturnBadRequest() {
@@ -154,6 +189,11 @@ public class VoiceControllerTest {
 
         }
 
+
+        /**
+         * Verifies that the transcribe endpoint returns
+         * the transcription for valid audio.
+         */
         @Test
         @DisplayName("Test POST /api/v1/voice/transcribe - Should return transcription when audio is valid")
         void testVoiceTranscribe_ShouldReturnTranscription() {
@@ -186,6 +226,11 @@ public class VoiceControllerTest {
                     .jsonPath("$.data.transcription").isEqualTo("Hello Jarvis");
         }
 
+
+        /**
+         * Verifies that the transcribe endpoint returns 503
+         * when Whisper is unavailable.
+         */
         @Test
         @DisplayName("Test POST /api/v1/voice/transcribe - Should return 503 when whisper is unavailable")
         void testVoiceTranscribe_ShouldReturn503() {
@@ -216,6 +261,11 @@ public class VoiceControllerTest {
 
         }
 
+
+        /**
+         * Verifies that the transcribe endpoint returns 400
+         * when the uploaded audio is empty.
+         */
         @Test
         @DisplayName("Test POST /api/v1/voice/transcribe - Should return 400 when audio is empty")
         void testVoiceTranscribe_ShouldReturn400() {
@@ -251,12 +301,16 @@ public class VoiceControllerTest {
     }
 
 
+    /**
+     * Verifies that protected Voice API endpoints reject
+     * requests without JWT authentication.
+     */
+    @Nested
     @WebFluxTest(controllers = VoiceController.class)
     @Import({
             SecurityConfig.class,
             JwtAuthenticationFilter.class
     })
-    @Nested
     class UnauthorizedTests {
 
         @Autowired
@@ -268,6 +322,11 @@ public class VoiceControllerTest {
         @MockitoBean
         private VoiceConversationService voiceConversationService;
 
+
+        /**
+         * Verifies that the status endpoint returns 401
+         * when no JWT token is provided.
+         */
         @Test
         @DisplayName("Test GET /api/v1/voice/status - Should return 401 without JWT token")
         void testVoiceStatus_ShouldReturnUnauthorized() {
@@ -278,6 +337,11 @@ public class VoiceControllerTest {
                     .expectStatus().isUnauthorized();
         }
 
+
+        /**
+         * Verifies that the speak endpoint returns 401
+         * when no JWT token is provided.
+         */
         @Test
         @DisplayName("Test POST /api/v1/voice/speak - Should return 401 without JWT token")
         void testVoiceSpeak_ShouldReturnUnauthorized() {
@@ -294,6 +358,11 @@ public class VoiceControllerTest {
                     .expectStatus().isUnauthorized();
         }
 
+
+        /**
+         * Verifies that the transcribe endpoint returns 401
+         * when no JWT token is provided.
+         */
         @Test
         @DisplayName("Test POST /api/v1/voice/transcribe - Should return 401 without JWT token")
         void testVoiceTranscribe_ShouldReturnUnauthorized() {

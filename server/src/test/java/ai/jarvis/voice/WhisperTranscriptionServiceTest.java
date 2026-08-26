@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -67,6 +68,11 @@ class WhisperTranscriptionServiceTest {
     private static final String MODEL =
             "whisper-large-v3-turbo";
 
+
+    /**
+     * Initializes mocked WebClient dependencies
+     * and Whisper service instances before each test.
+     */
     @BeforeEach
     void setUp() {
         // Wire builder BEFORE creating services
@@ -94,6 +100,11 @@ class WhisperTranscriptionServiceTest {
 
     // ── Guard tests ───────────────────────────────
 
+
+    /**
+     * Verifies that null audio is rejected
+     * with the EMPTY_AUDIO error code.
+     */
     @Test
     @DisplayName("transcribe() fails with EMPTY_AUDIO for null bytes")
     void shouldFailForNullAudio() {
@@ -107,6 +118,11 @@ class WhisperTranscriptionServiceTest {
                 .verify();
     }
 
+
+    /**
+     * Verifies that empty audio is rejected
+     * with the EMPTY_AUDIO error code.
+     */
     @Test
     @DisplayName("transcribe() fails with EMPTY_AUDIO for empty bytes")
     void shouldFailForEmptyAudio() {
@@ -120,6 +136,11 @@ class WhisperTranscriptionServiceTest {
                 .verify();
     }
 
+
+    /**
+     * Verifies that transcription fails
+     * when Whisper is not configured.
+     */
     @Test
     @DisplayName("transcribe() fails when no key configured")
     void shouldFailWhenNotConfigured() {
@@ -135,6 +156,11 @@ class WhisperTranscriptionServiceTest {
                 .verify();
     }
 
+
+    /**
+     * Verifies that language-specific transcription
+     * fails when Whisper is not configured.
+     */
     @Test
     @DisplayName("transcribe() with language fails when not configured")
     void shouldFailWithLanguageWhenNotConfigured() {
@@ -148,6 +174,11 @@ class WhisperTranscriptionServiceTest {
                 .verify();
     }
 
+
+    /**
+     * Verifies that a null language is accepted
+     * and audio validation still applies.
+     */
     @Test
     @DisplayName("transcribe() null language accepted (auto-detect)")
     void shouldAcceptNullLanguage() {
@@ -163,6 +194,11 @@ class WhisperTranscriptionServiceTest {
 
     // ── Success tests ─────────────────────────────
 
+
+    /**
+     * Verifies that transcription returns text
+     * when the provider responds successfully.
+     */
     @Test
     @DisplayName("transcribe() returns text on success")
     void shouldReturnTranscribedText() {
@@ -176,18 +212,27 @@ class WhisperTranscriptionServiceTest {
                 .verifyComplete();
     }
 
+    /**
+     * Verifies that an explicit language is included
+     * in the multipart request sent to Whisper.
+     */
     @Test
-    @DisplayName("transcribe() with language returns text on success")
-    void shouldReturnTranscribedTextWithLanguage() {
-        stubPostChain(Mono.just("Hello from Jarvis"));
+    @DisplayName("multipart body includes explicit language")
+    void shouldIncludeLanguageInMultipartBody() {
 
-        StepVerifier.create(
-                        serviceWithKey.transcribe(new byte[]{1, 2, 3, 4}, "en")
-                )
-                .expectNext("Hello from Jarvis")
-                .verifyComplete();
+        MultipartBodyBuilder builder =
+                serviceWithKey.buildMultipartBody(new byte[]{1, 2, 3}, "en");
+
+        assertThat(builder.build()).containsKey("language");
+        assertThat(builder.build().getFirst("language").getBody())
+                .isEqualTo("en");
     }
 
+
+    /**
+     * Verifies that whitespace surrounding
+     * a successful transcription is trimmed.
+     */
     @Test
     @DisplayName("transcribe() trims whitespace from response")
     void shouldTrimTranscribedText() {
@@ -203,6 +248,11 @@ class WhisperTranscriptionServiceTest {
                 .verifyComplete();
     }
 
+
+    /**
+     * Verifies that provider errors are mapped
+     * to TRANSCRIPTION_FAILED.
+     */
     @Test
     @DisplayName("transcribe() maps API error to TRANSCRIPTION_FAILED")
     void shouldMapApiErrorToVoiceException() {
@@ -222,6 +272,11 @@ class WhisperTranscriptionServiceTest {
                 .verify();
     }
 
+
+    /**
+     * Verifies that a blank provider response
+     * is mapped to TRANSCRIPTION_FAILED.
+     */
     @Test
     @DisplayName("transcribe() handles blank provider response gracefully")
     void shouldFailForBlankProviderResponse() {
@@ -239,6 +294,11 @@ class WhisperTranscriptionServiceTest {
 
     // ── isAvailable() tests ───────────────────────
 
+
+    /**
+     * Verifies that isAvailable returns false
+     * when Whisper is not configured.
+     */
     @Test
     @DisplayName("isAvailable() returns false when not configured")
     void shouldReturnFalseWhenNotConfigured() {
@@ -249,6 +309,11 @@ class WhisperTranscriptionServiceTest {
                 .verifyComplete();
     }
 
+
+    /**
+     * Verifies that isAvailable returns true
+     * when API responds.
+     */
     @Test
     @DisplayName("isAvailable() returns true when API responds")
     void shouldReturnTrueWhenApiResponds() {
@@ -261,6 +326,11 @@ class WhisperTranscriptionServiceTest {
                 .verifyComplete();
     }
 
+
+    /**
+     * Verifies that isAvailable returns false
+     * on connection error.
+     */
     @Test
     @DisplayName("isAvailable() returns false on connection error")
     void shouldReturnFalseOnConnectionError() {
@@ -276,6 +346,11 @@ class WhisperTranscriptionServiceTest {
 
     // ── getMode() tests ───────────────────────────
 
+
+    /**
+     * Verifies that a Groq URL reports
+     * the groq-cloud mode.
+     */
     @Test
     @DisplayName("getMode() returns cloud for cloud URL")
     void shouldReturnCloudModeForCloudUrl() {
@@ -283,6 +358,11 @@ class WhisperTranscriptionServiceTest {
                 .isEqualTo("groq-cloud");
     }
 
+
+    /**
+     * Verifies that a service without an API key
+     * reports the not-configured mode.
+     */
     @Test
     @DisplayName("getMode() returns not-configured when no key")
     void shouldReturnNotConfiguredWhenNoKey() {
@@ -290,6 +370,11 @@ class WhisperTranscriptionServiceTest {
                 .isEqualTo("not-configured");
     }
 
+
+    /**
+     * Verifies that a localhost Whisper instance
+     * reports the local-whisper mode.
+     */
     @Test
     @DisplayName("getMode() returns local for local URL")
     void shouldReturnLocalModeForLocalUrl() {
@@ -350,4 +435,6 @@ class WhisperTranscriptionServiceTest {
         when(responseSpec.bodyToMono(String.class))
                 .thenReturn(responseBody);
     }
+
+
 }
