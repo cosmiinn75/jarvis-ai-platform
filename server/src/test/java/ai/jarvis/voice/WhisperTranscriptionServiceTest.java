@@ -212,6 +212,7 @@ class WhisperTranscriptionServiceTest {
                 .verifyComplete();
     }
 
+
     /**
      * Verifies that an explicit language is included
      * in the multipart request sent to Whisper.
@@ -223,11 +224,31 @@ class WhisperTranscriptionServiceTest {
         MultipartBodyBuilder builder =
                 serviceWithKey.buildMultipartBody(new byte[]{1, 2, 3}, "en");
 
-        assertThat(builder.build()).containsKey("language");
-        assertThat(builder.build().getFirst("language").getBody())
+        var parts = builder.build();
+
+        assertThat(parts).containsKey("language");
+        assertThat(parts.getFirst("language").getBody())
                 .isEqualTo("en");
     }
 
+
+    /**
+     * Verifies that the language field is omitted
+     * from the multipart body when language is null.
+     */
+    @Test
+    @DisplayName("multipart body omits language field when null")
+    void shouldOmitLanguageFromMultipartBodyWhenNull() {
+
+        var parts = serviceWithKey
+                .buildMultipartBody(
+                        new byte[]{1, 2, 3},
+                        null)
+                .build();
+
+        assertThat(parts)
+                .doesNotContainKey("language");
+    }
 
     /**
      * Verifies that whitespace surrounding

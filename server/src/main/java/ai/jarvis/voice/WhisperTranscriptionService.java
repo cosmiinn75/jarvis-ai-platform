@@ -30,7 +30,6 @@ import java.time.Duration;
  * URL: http://localhost:8178
  * Setup: github.com/ggerganov/whisper.cpp
  * <p>
- * <p>
  * 1. Added timeouts: 30s transcription, 5s health check
  * 2. Local mode works without API key
  * isLocalMode=true when URL contains localhost
